@@ -15,7 +15,7 @@
 
 #define WITH_OTA    // Enable Over The Air updates from ArduinoIDE. Needs at least 1MB flash.
 
-IotsaApplication application("Iotsa LED Server");
+IotsaApplication application("Iotsa BLE LED Server");
 IotsaWifiMod wifiMod(application);
 
 #ifdef WITH_OTA
@@ -23,12 +23,14 @@ IotsaWifiMod wifiMod(application);
 IotsaOtaMod otaMod(application);
 #endif
 
+#include "iotsaBLEServer.h"
+IotsaBLEServerMod bleserverMod(application);
+
 //
 // LED module. 
 //
 
-//#define NEOPIXEL_PIN 4  // "Normal" pin for NeoPixel
-#define NEOPIXEL_PIN 15  // pulled-down during boot, can be used for NeoPixel afterwards
+#define NEOPIXEL_PIN 19 
 
 class IotsaLedControlMod : public IotsaLedMod {
 public:
