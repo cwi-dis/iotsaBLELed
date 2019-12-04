@@ -2,6 +2,13 @@
 #include "iotsaBLEServer.h"
 #include "iotsaConfigFile.h"
 
+class IotsaBLEServerCallbacks : public BLEServerCallbacks {
+
+};
+class IotsaBLECharacteristicCallbacks : public BLECharacteristicCallbacks {
+
+};
+
 std::string bleDeviceName("iotsa ble server");
 std::string bleServiceUUID("a339b14e-9b57-41a1-8b43-14501e57f20a");
 std::string bleServiceUUID2("6e0a4baa-a5d0-40a8-a111-56ed713bb0e1");
@@ -48,17 +55,21 @@ void IotsaBLEServerMod::setup() {
   configLoad();
   BLEDevice::init(iotsaConfig.hostName.c_str());
   bleServer = BLEDevice::createServer();
+  bleServer->setCallbacks(new IotsaBLEServerCallbacks());
 
   bleService2 = bleServer->createService(bleServiceUUID2);
   bleCharacteristic2 = bleService2->createCharacteristic(bleCharacteristic2UUID, bleCharacteristicProperties);
   bleCharacteristic2->setValue((uint8_t *)"0042", 4);
+  bleCharacteristic2->setCallbacks(new IotsaBLECharacteristicCallbacks());
   bleCharacteristic3 = bleService2->createCharacteristic(bleCharacteristic3UUID, bleCharacteristicProperties);
   bleCharacteristic3->setValue((uint8_t *)"hi", 2);
+  bleCharacteristic3->setCallbacks(new IotsaBLECharacteristicCallbacks());
   bleService2->start();
   
   bleService = bleServer->createService(bleServiceUUID);
   bleCharacteristic = bleService->createCharacteristic(bleCharacteristicUUID, bleCharacteristicProperties);
   bleCharacteristic->setValue((uint8_t *)argument.c_str(), argument.length());
+  bleCharacteristic->setCallbacks(new IotsaBLECharacteristicCallbacks());
   bleService->start();
 
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();

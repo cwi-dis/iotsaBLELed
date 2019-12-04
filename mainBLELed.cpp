@@ -30,7 +30,7 @@ IotsaBLEServerMod bleserverMod(application);
 // LED module. 
 //
 
-#define NEOPIXEL_PIN 19 
+#define NEOPIXEL_PIN 16
 
 class IotsaLedControlMod : public IotsaLedMod {
 public:
@@ -116,7 +116,6 @@ void IotsaLedControlMod::serverSetup() {
   name = "led";
 }
 
-// Instantiate the Led module, and install it in the framework
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
 
 // Standard setup() method, hands off most work to the application framework
