@@ -3,13 +3,19 @@
 #include "iotsaConfigFile.h"
 
 std::string bleDeviceName("iotsa ble server");
-std::string bleServiceUUID("b339b14e-9b57-41a1-8b43-14501e57f20a");
+std::string bleServiceUUID("a339b14e-9b57-41a1-8b43-14501e57f20a");
+std::string bleServiceUUID2("6e0a4baa-a5d0-40a8-a111-56ed713bb0e1");
 std::string bleCharacteristicUUID("9f25a896-a41f-4895-9ed3-645d32e64293");
+std::string bleCharacteristic2UUID("9f25a896-a41f-4895-9ed3-645d32e64293");
+std::string bleCharacteristic3UUID("9f25a896-a41f-4895-9ed3-645d32e64293");
 int bleCharacteristicProperties = BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE;
 
 BLEServer *bleServer;
 BLEService *bleService;
+BLEService *bleService2;
 BLECharacteristic *bleCharacteristic;
+BLECharacteristic *bleCharacteristic2;
+BLECharacteristic *bleCharacteristic3;
 
 #ifdef IOTSA_WITH_WEB
 void
@@ -40,16 +46,27 @@ String IotsaBLEServerMod::info() {
 
 void IotsaBLEServerMod::setup() {
   configLoad();
-  BLEDevice::init(bleDeviceName);
+  BLEDevice::init(iotsaConfig.hostName.c_str());
   bleServer = BLEDevice::createServer();
+
+  bleService2 = bleServer->createService(bleServiceUUID2);
+  bleCharacteristic2 = bleService2->createCharacteristic(bleCharacteristic2UUID, bleCharacteristicProperties);
+  bleCharacteristic2->setValue((uint8_t *)"0042", 4);
+  bleCharacteristic3 = bleService2->createCharacteristic(bleCharacteristic3UUID, bleCharacteristicProperties);
+  bleCharacteristic3->setValue((uint8_t *)"hi", 2);
+  bleService2->start();
+  
   bleService = bleServer->createService(bleServiceUUID);
   bleCharacteristic = bleService->createCharacteristic(bleCharacteristicUUID, bleCharacteristicProperties);
   bleCharacteristic->setValue((uint8_t *)argument.c_str(), argument.length());
+  bleService->start();
+
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(bleServiceUUID2);  
   pAdvertising->addServiceUUID(bleServiceUUID);
   pAdvertising->setScanResponse(true);
-//  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
-//  pAdvertising->setMinPreferred(0x12);
+  //pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+  //pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
 
 }
