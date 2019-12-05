@@ -11,22 +11,28 @@
 #else
 #define IotsaBLEServerModBaseMod IotsaMod
 #endif
+typedef const char * UUIDstring;
+
 class IotsaBLEApiProvider {
 public:
+  typedef const char * UUIDstring;
+
   virtual ~IotsaBLEApiProvider() {}
-  virtual bool bleCharacteristicWriteCallback(const char *charUUID) = 0;
-  virtual bool bleCharacteristicReadCallback(const char *charUUID) = 0;
+  virtual bool bleCharacteristicWriteCallback(UUIDstring charUUID) = 0;
+  virtual bool bleCharacteristicReadCallback(UUIDstring charUUID) = 0;
 
 };
 
 class IotsaBLEServiceProvider {
 public:
+  typedef IotsaBLEApiProvider::UUIDstring UUIDstring;
+  
   virtual ~IotsaBLEServiceProvider() {}
   virtual void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) = 0;
-  virtual void bleAddCharacteristic(const char *charUUID, int mask) = 0;
-  virtual void bleCharacteristicSet(const char *charUUID, const uint8_t *data, size_t size) = 0;
-  virtual void bleCharacteristicGet(const char *charUUID, uint8_t **datap, size_t *sizep) = 0;
-  virtual int bleCharacteristicGetInt(const char *charUUID) = 0;
+  virtual void bleAddCharacteristic(UUIDstring charUUID, int mask) = 0;
+  virtual void bleCharacteristicSet(UUIDstring charUUID, const uint8_t *data, size_t size) = 0;
+  virtual void bleCharacteristicGet(UUIDstring charUUID, uint8_t **datap, size_t *sizep) = 0;
+  virtual int bleCharacteristicGetInt(UUIDstring charUUID) = 0;
 
   static const uint32_t READ = BLECharacteristic::PROPERTY_READ;
   static const uint32_t WRITE = BLECharacteristic::PROPERTY_WRITE;
@@ -41,10 +47,10 @@ public:
   void loop();
   String info();
   void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider);
-  void bleAddCharacteristic(const char *charUUID, int mask);
-  void bleCharacteristicSet(const char *charUUID, const uint8_t *data, size_t size);
-  void bleCharacteristicGet(const char *charUUID, uint8_t **datap, size_t *sizep);
-  int bleCharacteristicGetInt(const char *charUUID);
+  void bleAddCharacteristic(UUIDstring charUUID, int mask);
+  void bleCharacteristicSet(UUIDstring charUUID, const uint8_t *data, size_t size);
+  void bleCharacteristicGet(UUIDstring charUUID, uint8_t **datap, size_t *sizep);
+  int bleCharacteristicGetInt(UUIDstring charUUID);
 
 protected:
   bool getHandler(const char *path, JsonObject& reply);
@@ -54,6 +60,12 @@ protected:
   void handler();
   IotsaBLEApiProvider *apiProvider;
   String argument;
+
+  BLEServer *bleServer;
+  BLEService *bleService;
+  int nCharacteristic;
+  UUIDstring  *characteristicUUIDs;
+  BLECharacteristic **bleCharacteristics;
 };
 
 #endif

@@ -13,11 +13,19 @@ class IotsaBLEServerCallbacks : public BLEServerCallbacks {
 
 };
 class IotsaBLECharacteristicCallbacks : public BLECharacteristicCallbacks {
+public:
+  IotsaBLECharacteristicCallbacks(UUIDstring _charUUID, IotsaBLEApiProvider *_api)
+  : charUUID(_charUUID),
+    api(_api)
+  {}
+
 	void onRead(BLECharacteristic* pCharacteristic) {
     IFDEBUG IotsaSerial.printf("BLE char onRead 0x%x\n", (uint32_t)pCharacteristic);
+    api->bleCharacteristicReadCallback(charUUID);
   }
 	void onWrite(BLECharacteristic* pCharacteristic) {
     IFDEBUG IotsaSerial.printf("BLE char onWrite\n");
+    api->bleCharacteristicWriteCallback(charUUID);
   }
 	void onNotify(BLECharacteristic* pCharacteristic) {
     IFDEBUG IotsaSerial.printf("BLE char onNotify\n");
@@ -25,23 +33,10 @@ class IotsaBLECharacteristicCallbacks : public BLECharacteristicCallbacks {
 	void onStatus(BLECharacteristic* pCharacteristic, Status s, uint32_t code) {
     IFDEBUG IotsaSerial.printf("BLE char onStatus\n");
   }
-
+private:
+  UUIDstring charUUID;
+  IotsaBLEApiProvider *api;
 };
-
-std::string bleDeviceName("iotsa ble server");
-std::string bleServiceUUID("a339b14e-9b57-41a1-8b43-14501e57f20a");
-std::string bleServiceUUID2("6e0a4baa-a5d0-40a8-a111-56ed713bb0e1");
-std::string bleCharacteristicUUID("9f25a896-a41f-4895-9ed3-645d32e64293");
-std::string bleCharacteristic2UUID("9f25a896-a41f-4895-9ed3-645d32e64293");
-std::string bleCharacteristic3UUID("9932723c-c295-459d-8b97-0125e7e5f4b4");
-int bleCharacteristicProperties = BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE;
-
-BLEServer *bleServer;
-BLEService *bleService;
-BLEService *bleService2;
-BLECharacteristic *bleCharacteristic;
-BLECharacteristic *bleCharacteristic2;
-BLECharacteristic *bleCharacteristic3;
 
 #ifdef IOTSA_WITH_WEB
 void
@@ -50,13 +45,10 @@ IotsaBLEServerMod::handler() {
   if( server->hasArg("argument")) {
     if (needsAuthentication()) return;
     argument = server->arg("argument");
-    bleCharacteristic->setValue((uint8_t *)argument.c_str(), argument.length());
     anyChanged = true;
   }
   if (anyChanged) configSave();
   
-  argument = bleCharacteristic->getValue().c_str();
-
   String message = "<html><head><title>BLE Server module</title></head><body><h1>BLE Server module</h1>";
   message += "<form method='get'>Argument: <input name='argument' value='";
   message += htmlEncode(argument);
@@ -75,41 +67,33 @@ void IotsaBLEServerMod::setup() {
   BLEDevice::init(iotsaConfig.hostName.c_str());
   bleServer = BLEDevice::createServer();
   bleServer->setCallbacks(new IotsaBLEServerCallbacks());
+  bleService = NULL;
+  nCharacteristic = 0;
+  characteristicUUIDs = NULL;
+  bleCharacteristics = NULL;
+#if 0
 
-  bleService = bleServer->createService(bleServiceUUID);
-  
-  bleCharacteristic = bleService->createCharacteristic(bleCharacteristicUUID, bleCharacteristicProperties);
-  IFDEBUG IotsaSerial.printf("ble char1=0x%x\n", (uint32_t)bleCharacteristic);
-  bleCharacteristic->setValue((uint8_t *)argument.c_str(), argument.length());
-  bleCharacteristic->setCallbacks(new IotsaBLECharacteristicCallbacks());
-  bleService->start();
 
   bleService2 = bleServer->createService(bleServiceUUID2);
 
   bleCharacteristic2 = bleService2->createCharacteristic(bleCharacteristic2UUID, bleCharacteristicProperties);
   IFDEBUG IotsaSerial.printf("ble char2=0x%x\n", (uint32_t)bleCharacteristic2);
   bleCharacteristic2->setValue((uint8_t *)"0042", 4);
-  bleCharacteristic2->setCallbacks(new IotsaBLECharacteristicCallbacks());
 
   bleCharacteristic3 = bleService2->createCharacteristic(bleCharacteristic3UUID, bleCharacteristicProperties);
   IFDEBUG IotsaSerial.printf("ble char3=0x%x\n", (uint32_t)bleCharacteristic3);
   bleCharacteristic3->setValue((uint8_t *)"hi", 2);
   bleCharacteristic3->setCallbacks(new IotsaBLECharacteristicCallbacks());
   bleService2->start();
+#endif
   
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(bleServiceUUID2);  
-  pAdvertising->addServiceUUID(bleServiceUUID);
   pAdvertising->setScanResponse(true);
-  //pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
-  //pAdvertising->setMinPreferred(0x12);
-  BLEDevice::startAdvertising();
-
+  pAdvertising->start();
 }
 
 #ifdef IOTSA_WITH_API
 bool IotsaBLEServerMod::getHandler(const char *path, JsonObject& reply) {
-  argument = bleCharacteristic->getValue().c_str();
   reply["argument"] = argument;
   return true;
 }
@@ -119,7 +103,6 @@ bool IotsaBLEServerMod::putHandler(const char *path, const JsonVariant& request,
   JsonObject reqObj = request.as<JsonObject>();
   if (reqObj.containsKey("argument")) {
     argument = reqObj["argument"].as<String>();
-    bleCharacteristic->setValue((uint8_t *)argument.c_str(), argument.length());
     anyChanged = true;
   }
   if (anyChanged) configSave();
@@ -140,23 +123,56 @@ void IotsaBLEServerMod::serverSetup() {
 void IotsaBLEServerMod::bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) {
   apiProvider = _apiProvider;
   IFDEBUG IotsaSerial.printf("ble service %s to 0x%x\n", serviceUUID, (uint32_t)apiProvider);
-  // xxxjack setup service
-  // xxxjack setup callbacks
+  bleService = bleServer->createService(serviceUUID);
+  bleService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->stop();
+  pAdvertising->addServiceUUID(serviceUUID);
+  pAdvertising->start();
 }
 
-void IotsaBLEServerMod::bleAddCharacteristic(const char *charUUID, int mask) {
+void IotsaBLEServerMod::bleAddCharacteristic(UUIDstring charUUID, int mask) {
   IFDEBUG IotsaSerial.printf("ble characteristic %s mask %d\n", charUUID, mask);
+  nCharacteristic++;
+  characteristicUUIDs = (UUIDstring *)realloc((void *)characteristicUUIDs, nCharacteristic*sizeof(UUIDstring));
+  bleCharacteristics = (BLECharacteristic **)realloc((void *)bleCharacteristics, nCharacteristic*sizeof(BLECharacteristic *));
+  if (characteristicUUIDs == NULL || bleCharacteristics == NULL) {
+    IotsaSerial.println("bleAddCharacteristic out of memory");
+    return;
+  }
+  bleService->stop();
+  BLECharacteristic *newChar = bleService->createCharacteristic(charUUID, mask);
+  newChar->setCallbacks(new IotsaBLECharacteristicCallbacks(charUUID, apiProvider));
+
+  characteristicUUIDs[nCharacteristic-1] = charUUID;
+  bleCharacteristics[nCharacteristic-1] = newChar;
+  bleService->start();
 }
 
-void IotsaBLEServerMod::bleCharacteristicSet(const char *charUUID, const uint8_t *data, size_t size) {
-
+void IotsaBLEServerMod::bleCharacteristicSet(UUIDstring charUUID, const uint8_t *data, size_t size) {
+  for(int i=0; i<nCharacteristic; i++) {
+    if (characteristicUUIDs[i] == charUUID) {
+      bleCharacteristics[i]->setValue((uint8_t *)data, size);
+      return;
+    }
+    IotsaSerial.println("bleCharacteristicSet: unknown characteristic");
+  }
 }
 
-void IotsaBLEServerMod::bleCharacteristicGet(const char *charUUID, uint8_t **datap, size_t *sizep) {
-
+void IotsaBLEServerMod::bleCharacteristicGet(UUIDstring charUUID, uint8_t **datap, size_t *sizep) {
+  for(int i=0; i<nCharacteristic; i++) {
+    if (characteristicUUIDs[i] == charUUID) {
+      auto value = bleCharacteristics[i]->getValue();
+      if (datap) *datap = (uint8_t *)value.c_str();
+      if (sizep) *sizep = value.size();
+      return;
+    }
+    IotsaSerial.println("bleCharacteristicSet: unknown characteristic");
+  }
 }
 
-int IotsaBLEServerMod::bleCharacteristicGetInt(const char *charUUID) {
+int IotsaBLEServerMod::bleCharacteristicGetInt(UUIDstring charUUID) {
   size_t size;
   uint8_t *ptr;
   int val = 0;

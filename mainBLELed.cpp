@@ -37,8 +37,8 @@ public:
   using IotsaLedMod::IotsaLedMod;
   void serverSetup();
   String info();
-  bool bleCharacteristicWriteCallback(const char *charUUID);
-  bool bleCharacteristicReadCallback(const char *charUUID);
+  bool bleCharacteristicWriteCallback(UUIDstring charUUID);
+  bool bleCharacteristicReadCallback(UUIDstring charUUID);
   void setBLE(IotsaBLEServiceProvider *_ble);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
@@ -48,24 +48,28 @@ private:
   void handler();
 };
 
-static const char *serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
-static const char *rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
+static IotsaBLEServiceProvider::UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
+static IotsaBLEServiceProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
 
-bool IotsaLedControlMod::bleCharacteristicWriteCallback(const char *charUUID) {
+bool IotsaLedControlMod::bleCharacteristicWriteCallback(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
-      rgb = ble->bleCharacteristicGetInt(rgbUUID);
+      uint32_t _rgb = ble->bleCharacteristicGetInt(rgbUUID);
+      set(_rgb, 1000, 0, 0x7fff);
+      IFDEBUG IotsaSerial.printf("xxxjack led: wrote %s value 0x%x\n", charUUID, rgb);
       return true;
   }
+  IotsaSerial.println("ledControlMod: ble: write unknown uuid");
   return false;
 }
 
-bool IotsaLedControlMod::bleCharacteristicReadCallback(const char *charUUID) {
+bool IotsaLedControlMod::bleCharacteristicReadCallback(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
+      IFDEBUG IotsaSerial.printf("xxxjack led: read %s value 0x%x\n", charUUID, rgb);
       ble->bleCharacteristicSet(rgbUUID, (uint8_t *)&rgb, sizeof(rgb));
       return true;
   }
+  IotsaSerial.println("ledControlMod: ble: read unknown uuid");
   return false;
-
 }
 
 #ifdef IOTSA_WITH_WEB
