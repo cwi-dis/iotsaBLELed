@@ -137,6 +137,36 @@ void IotsaBLEServerMod::serverSetup() {
 #endif
 }
 
+void IotsaBLEServerMod::bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) {
+  apiProvider = _apiProvider;
+  IFDEBUG IotsaSerial.printf("ble service %s to 0x%x\n", serviceUUID, (uint32_t)apiProvider);
+  // xxxjack setup service
+  // xxxjack setup callbacks
+}
+
+void IotsaBLEServerMod::bleAddCharacteristic(const char *charUUID, int mask) {
+  IFDEBUG IotsaSerial.printf("ble characteristic %s mask %d\n", charUUID, mask);
+}
+
+void IotsaBLEServerMod::bleCharacteristicSet(const char *charUUID, const uint8_t *data, size_t size) {
+
+}
+
+void IotsaBLEServerMod::bleCharacteristicGet(const char *charUUID, uint8_t **datap, size_t *sizep) {
+
+}
+
+int IotsaBLEServerMod::bleCharacteristicGetInt(const char *charUUID) {
+  size_t size;
+  uint8_t *ptr;
+  int val = 0;
+  bleCharacteristicGet(charUUID, &ptr, &size);
+  while (size--) {
+    val = (val << 8) | *ptr++;
+  }
+  return val;
+}
+
 void IotsaBLEServerMod::configLoad() {
   IotsaConfigFileLoad cf("/config/bleserver.cfg");
   cf.get("argument", argument, "");

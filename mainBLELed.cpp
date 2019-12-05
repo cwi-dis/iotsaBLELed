@@ -32,17 +32,41 @@ IotsaBLEServerMod bleserverMod(application);
 
 #define NEOPIXEL_PIN 16
 
-class IotsaLedControlMod : public IotsaLedMod {
+class IotsaLedControlMod : public IotsaLedMod, public IotsaBLEApiProvider {
 public:
   using IotsaLedMod::IotsaLedMod;
   void serverSetup();
   String info();
+  bool bleCharacteristicWriteCallback(const char *charUUID);
+  bool bleCharacteristicReadCallback(const char *charUUID);
+  void setBLE(IotsaBLEServiceProvider *_ble);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
   bool putHandler(const char *path, const JsonVariant& request, JsonObject& reply);
+  IotsaBLEServiceProvider *ble;
 private:
   void handler();
 };
+
+static const char *serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
+static const char *rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
+
+bool IotsaLedControlMod::bleCharacteristicWriteCallback(const char *charUUID) {
+  if (charUUID == rgbUUID) {
+      rgb = ble->bleCharacteristicGetInt(rgbUUID);
+      return true;
+  }
+  return false;
+}
+
+bool IotsaLedControlMod::bleCharacteristicReadCallback(const char *charUUID) {
+  if (charUUID == rgbUUID) {
+      ble->bleCharacteristicSet(rgbUUID, (uint8_t *)&rgb, sizeof(rgb));
+      return true;
+  }
+  return false;
+
+}
 
 #ifdef IOTSA_WITH_WEB
 void
@@ -66,7 +90,10 @@ IotsaLedControlMod::handler() {
 
 String IotsaLedControlMod::info() {
   // Return some information about this module, for the main page of the web server.
-  String rv = "<p>See <a href=\"/led\">/led</a> for setting the LED color.</p>";
+  String rv = "<p>See <a href=\"/led\">/led</a> for setting the LED color.";
+  rv += " Or use REST api at <a href='/api/led'>/api/led</a>.";
+  rv += " Or use BLE service " + String(serviceUUID) + ".";
+  rv += "</p>";
   return rv;
 }
 #endif // IOTSA_WITH_WEB
@@ -91,12 +118,19 @@ void IotsaLedControlMod::serverSetup() {
   name = "led";
 }
 
+void IotsaLedControlMod::setBLE(IotsaBLEServiceProvider *_ble) {
+  ble = _ble;
+  ble->bleSetup(serviceUUID, this);
+  ble->bleAddCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
+}
+
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
 
 // Standard setup() method, hands off most work to the application framework
 void setup(void){
   application.setup();
   application.serverSetup();
+  ledMod.setBLE(&bleserverMod);
 }
  
 // Standard loop() routine, hands off most work to the application framework
