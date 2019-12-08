@@ -55,34 +55,25 @@ String IotsaBLEServerMod::info() {
 }
 #endif // IOTSA_WITH_WEB
 
+BLEServer *IotsaBLEServerMod::s_server = 0;
+
+void IotsaBLEServerMod::createServer() {
+  if (s_server) return;
+  BLEDevice::init(iotsaConfig.hostName.c_str());
+  s_server = BLEDevice::createServer();
+  s_server->setCallbacks(new IotsaBLEServerCallbacks());
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->setScanResponse(true);
+  pAdvertising->start();
+}
+
 void IotsaBLEServerMod::setup() {
   configLoad();
-  BLEDevice::init(iotsaConfig.hostName.c_str());
-  bleServer = BLEDevice::createServer();
-  bleServer->setCallbacks(new IotsaBLEServerCallbacks());
+  createServer();
   bleService = NULL;
   nCharacteristic = 0;
   characteristicUUIDs = NULL;
   bleCharacteristics = NULL;
-#if 0
-
-
-  bleService2 = bleServer->createService(bleServiceUUID2);
-
-  bleCharacteristic2 = bleService2->createCharacteristic(bleCharacteristic2UUID, bleCharacteristicProperties);
-  IFDEBUG IotsaSerial.printf("ble char2=0x%x\n", (uint32_t)bleCharacteristic2);
-  bleCharacteristic2->setValue((uint8_t *)"0042", 4);
-
-  bleCharacteristic3 = bleService2->createCharacteristic(bleCharacteristic3UUID, bleCharacteristicProperties);
-  IFDEBUG IotsaSerial.printf("ble char3=0x%x\n", (uint32_t)bleCharacteristic3);
-  bleCharacteristic3->setValue((uint8_t *)"hi", 2);
-  bleCharacteristic3->setCallbacks(new IotsaBLECharacteristicCallbacks());
-  bleService2->start();
-#endif
-  
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->setScanResponse(true);
-  pAdvertising->start();
 }
 
 #ifdef IOTSA_WITH_API
@@ -110,7 +101,7 @@ void IotsaBLEServerMod::serverSetup() {
 void IotsaBLEServerMod::bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) {
   apiProvider = _apiProvider;
   IFDEBUG IotsaSerial.printf("ble service %s to 0x%x\n", serviceUUID, (uint32_t)apiProvider);
-  bleService = bleServer->createService(serviceUUID);
+  bleService = s_server->createService(serviceUUID);
   bleService->start();
 
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();

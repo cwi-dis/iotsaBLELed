@@ -60,7 +60,8 @@ protected:
   void handler();
   IotsaBLEApiProvider *apiProvider;
 
-  BLEServer *bleServer;
+  static void createServer();
+  static BLEServer *s_server;
   BLEService *bleService;
   int nCharacteristic;
   UUIDstring  *characteristicUUIDs;
