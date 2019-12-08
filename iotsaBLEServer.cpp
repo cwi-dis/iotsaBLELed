@@ -42,17 +42,10 @@ private:
 void
 IotsaBLEServerMod::handler() {
   bool anyChanged = false;
-  if( server->hasArg("argument")) {
-    if (needsAuthentication()) return;
-    argument = server->arg("argument");
-    anyChanged = true;
-  }
   if (anyChanged) configSave();
   
   String message = "<html><head><title>BLE Server module</title></head><body><h1>BLE Server module</h1>";
-  message += "<form method='get'>Argument: <input name='argument' value='";
-  message += htmlEncode(argument);
-  message += "'><br><input type='submit'></form>";
+  message += "<p>Nothing to be seen here, yet.</p>";
   server->send(200, "text/html", message);
 }
 
@@ -94,17 +87,11 @@ void IotsaBLEServerMod::setup() {
 
 #ifdef IOTSA_WITH_API
 bool IotsaBLEServerMod::getHandler(const char *path, JsonObject& reply) {
-  reply["argument"] = argument;
   return true;
 }
 
 bool IotsaBLEServerMod::putHandler(const char *path, const JsonVariant& request, JsonObject& reply) {
   bool anyChanged = false;
-  JsonObject reqObj = request.as<JsonObject>();
-  if (reqObj.containsKey("argument")) {
-    argument = reqObj["argument"].as<String>();
-    anyChanged = true;
-  }
   if (anyChanged) configSave();
   return anyChanged;
 }
@@ -184,14 +171,11 @@ int IotsaBLEServerMod::bleCharacteristicGetInt(UUIDstring charUUID) {
 }
 
 void IotsaBLEServerMod::configLoad() {
-  IotsaConfigFileLoad cf("/config/bleserver.cfg");
-  cf.get("argument", argument, "");
- 
+  IotsaConfigFileLoad cf("/config/bleserver.cfg"); 
 }
 
 void IotsaBLEServerMod::configSave() {
   IotsaConfigFileSave cf("/config/bleserver.cfg");
-  cf.put("argument", argument);
 }
 
 void IotsaBLEServerMod::loop() {

@@ -59,7 +59,6 @@ protected:
   void configSave();
   void handler();
   IotsaBLEApiProvider *apiProvider;
-  String argument;
 
   BLEServer *bleServer;
   BLEService *bleService;
