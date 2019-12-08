@@ -18,8 +18,8 @@ public:
   typedef const char * UUIDstring;
 
   virtual ~IotsaBLEApiProvider() {}
-  virtual bool bleCharacteristicWriteCallback(UUIDstring charUUID) = 0;
-  virtual bool bleCharacteristicReadCallback(UUIDstring charUUID) = 0;
+  virtual bool blePutHandler(UUIDstring charUUID) = 0;
+  virtual bool bleGetHandler(UUIDstring charUUID) = 0;
 
 };
 
@@ -29,10 +29,16 @@ public:
   
   virtual ~IotsaBLEServiceProvider() {}
   virtual void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) = 0;
-  virtual void bleAddCharacteristic(UUIDstring charUUID, int mask) = 0;
-  virtual void bleCharacteristicSet(UUIDstring charUUID, const uint8_t *data, size_t size) = 0;
-  virtual void bleCharacteristicGet(UUIDstring charUUID, uint8_t **datap, size_t *sizep) = 0;
-  virtual int bleCharacteristicGetInt(UUIDstring charUUID) = 0;
+  virtual void addCharacteristic(UUIDstring charUUID, int mask) = 0;
+  virtual void characteristicSetFromBuffer(UUIDstring charUUID, const uint8_t *data, size_t size) = 0;
+  virtual void characteristicSet(UUIDstring charUUID, uint8_t value) = 0;
+  virtual void characteristicSet(UUIDstring charUUID, uint16_t value) = 0;
+  virtual void characteristicSet(UUIDstring charUUID, uint32_t value) = 0;
+  virtual void characteristicSet(UUIDstring charUUID, const std::string& value) = 0;
+  virtual void characteristicSet(UUIDstring charUUID, const String& value) = 0;
+  virtual void characteristicAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep) = 0;
+  virtual int characteristicAsInt(UUIDstring charUUID) = 0;
+  virtual std::string characteristicAsString(UUIDstring charUUID) = 0;
 
   static const uint32_t READ = BLECharacteristic::PROPERTY_READ;
   static const uint32_t WRITE = BLECharacteristic::PROPERTY_WRITE;
@@ -47,10 +53,16 @@ public:
   void loop();
   String info();
   void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider);
-  void bleAddCharacteristic(UUIDstring charUUID, int mask);
-  void bleCharacteristicSet(UUIDstring charUUID, const uint8_t *data, size_t size);
-  void bleCharacteristicGet(UUIDstring charUUID, uint8_t **datap, size_t *sizep);
-  int bleCharacteristicGetInt(UUIDstring charUUID);
+  void addCharacteristic(UUIDstring charUUID, int mask);
+  void characteristicSetFromBuffer(UUIDstring charUUID, const uint8_t *data, size_t size);
+  void characteristicSet(UUIDstring charUUID, uint8_t value);
+  void characteristicSet(UUIDstring charUUID, uint16_t value);
+  void characteristicSet(UUIDstring charUUID, uint32_t value);
+  void characteristicSet(UUIDstring charUUID, const std::string& value);
+  void characteristicSet(UUIDstring charUUID, const String& value);
+  void characteristicAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep);
+  int characteristicAsInt(UUIDstring charUUID);
+  std::string characteristicAsString(UUIDstring charUUID);
 
 protected:
   bool getHandler(const char *path, JsonObject& reply);

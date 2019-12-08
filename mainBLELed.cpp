@@ -37,8 +37,8 @@ public:
   using IotsaLedMod::IotsaLedMod;
   void serverSetup();
   String info();
-  bool bleCharacteristicWriteCallback(UUIDstring charUUID);
-  bool bleCharacteristicReadCallback(UUIDstring charUUID);
+  bool blePutHandler(UUIDstring charUUID);
+  bool bleGetHandler(UUIDstring charUUID);
   void setBLE(IotsaBLEServiceProvider *_ble);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
@@ -51,9 +51,9 @@ private:
 static IotsaBLEServiceProvider::UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
 static IotsaBLEServiceProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
 
-bool IotsaLedControlMod::bleCharacteristicWriteCallback(UUIDstring charUUID) {
+bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
-      uint32_t _rgb = ble->bleCharacteristicGetInt(rgbUUID);
+      uint32_t _rgb = ble->characteristicAsInt(rgbUUID);
       set(_rgb, 1000, 0, 0x7fff);
       IFDEBUG IotsaSerial.printf("xxxjack led: wrote %s value 0x%x\n", charUUID, rgb);
       return true;
@@ -62,10 +62,10 @@ bool IotsaLedControlMod::bleCharacteristicWriteCallback(UUIDstring charUUID) {
   return false;
 }
 
-bool IotsaLedControlMod::bleCharacteristicReadCallback(UUIDstring charUUID) {
+bool IotsaLedControlMod::bleGetHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
       IFDEBUG IotsaSerial.printf("xxxjack led: read %s value 0x%x\n", charUUID, rgb);
-      ble->bleCharacteristicSet(rgbUUID, (uint8_t *)&rgb, sizeof(rgb));
+      ble->characteristicSet(rgbUUID, rgb);
       return true;
   }
   IotsaSerial.println("ledControlMod: ble: read unknown uuid");
@@ -125,7 +125,7 @@ void IotsaLedControlMod::serverSetup() {
 void IotsaLedControlMod::setBLE(IotsaBLEServiceProvider *_ble) {
   ble = _ble;
   ble->bleSetup(serviceUUID, this);
-  ble->bleAddCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
+  ble->addCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
 }
 
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
