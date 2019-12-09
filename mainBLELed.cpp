@@ -39,7 +39,7 @@ public:
   String info();
   bool blePutHandler(UUIDstring charUUID);
   bool bleGetHandler(UUIDstring charUUID);
-  void setBLE(IotsaBLEServiceProvider *_ble);
+  void setBLE(IotsaBLEServerMod *_ble);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
   bool putHandler(const char *path, const JsonVariant& request, JsonObject& reply);
@@ -87,7 +87,7 @@ IotsaLedControlMod::handler() {
   
   String message = "<html><head><title>Led Server</title></head><body><h1>Led Server</h1>";
   message += "<form method='get'>";
-  message += "Color (hex rrggbb): <input type='text' name='rgb'><br>";
+  message += "Color (hex rrggbb): <input type='text' name='rgb' value='" + String(rgb, HEX) + "'><br>";
   message += "<input type='submit'></form></body></html>";
   server->send(200, "text/html", message);
 }
@@ -122,7 +122,7 @@ void IotsaLedControlMod::serverSetup() {
   name = "led";
 }
 
-void IotsaLedControlMod::setBLE(IotsaBLEServiceProvider *_ble) {
+void IotsaLedControlMod::setBLE(IotsaBLEServerMod *_ble) {
   bleApi.init(_ble);
   bleApi.bleSetup(serviceUUID, this);
   bleApi.addCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
