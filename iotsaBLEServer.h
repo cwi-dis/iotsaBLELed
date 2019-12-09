@@ -23,6 +23,7 @@ public:
 
 };
 
+
 class IotsaBLEServiceProvider {
 public:
   typedef IotsaBLEApiProvider::UUIDstring UUIDstring;
@@ -43,6 +44,27 @@ public:
   static const uint32_t READ = BLECharacteristic::PROPERTY_READ;
   static const uint32_t WRITE = BLECharacteristic::PROPERTY_WRITE;
   static const uint32_t NOTIFY = BLECharacteristic::PROPERTY_NOTIFY;
+};
+
+class IotsaBleApiService {
+public:
+  IotsaBleApiService(IotsaBLEServiceProvider *_mod=NULL)
+  : mod(_mod)
+  {}
+  void init(IotsaBLEServiceProvider *_mod) { mod=_mod; }
+  void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) { return mod->bleSetup(serviceUUID, _apiProvider); }
+  void addCharacteristic(UUIDstring charUUID, int mask) { return mod->addCharacteristic(charUUID, mask); }
+  void characteristicSetFromBuffer(UUIDstring charUUID, const uint8_t *data, size_t size) { return mod->characteristicSetFromBuffer(charUUID, data, size); }
+  void characteristicSet(UUIDstring charUUID, uint8_t value) { return mod->characteristicSet(charUUID, value); }
+  void characteristicSet(UUIDstring charUUID, uint16_t value) { return mod->characteristicSet(charUUID, value); }
+  void characteristicSet(UUIDstring charUUID, uint32_t value) { return mod->characteristicSet(charUUID, value); }
+  void characteristicSet(UUIDstring charUUID, const std::string& value) { return mod->characteristicSet(charUUID, value); }
+  void characteristicSet(UUIDstring charUUID, const String& value) { return mod->characteristicSet(charUUID, value); }
+  void characteristicAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep) { return mod->characteristicAsBuffer(charUUID, datap, sizep); }
+  int characteristicAsInt(UUIDstring charUUID) { return mod->characteristicAsInt(charUUID); }
+  std::string characteristicAsString(UUIDstring charUUID) { return mod->characteristicAsString(charUUID); }
+protected:
+  IotsaBLEServiceProvider *mod;
 };
 
 class IotsaBLEServerMod : public IotsaBLEServerModBaseMod, public IotsaBLEServiceProvider {

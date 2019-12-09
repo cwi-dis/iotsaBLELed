@@ -43,7 +43,7 @@ public:
 protected:
   bool getHandler(const char *path, JsonObject& reply);
   bool putHandler(const char *path, const JsonVariant& request, JsonObject& reply);
-  IotsaBLEServiceProvider *ble;
+  IotsaBleApiService bleApi;
 private:
   void handler();
 };
@@ -53,7 +53,7 @@ static IotsaBLEServiceProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE
 
 bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
-      uint32_t _rgb = ble->characteristicAsInt(rgbUUID);
+      uint32_t _rgb = bleApi.characteristicAsInt(rgbUUID);
       set(_rgb, 1000, 0, 0x7fff);
       IFDEBUG IotsaSerial.printf("xxxjack led: wrote %s value 0x%x\n", charUUID, rgb);
       return true;
@@ -65,7 +65,7 @@ bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
 bool IotsaLedControlMod::bleGetHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
       IFDEBUG IotsaSerial.printf("xxxjack led: read %s value 0x%x\n", charUUID, rgb);
-      ble->characteristicSet(rgbUUID, rgb);
+      bleApi.characteristicSet(rgbUUID, rgb);
       return true;
   }
   IotsaSerial.println("ledControlMod: ble: read unknown uuid");
@@ -123,9 +123,9 @@ void IotsaLedControlMod::serverSetup() {
 }
 
 void IotsaLedControlMod::setBLE(IotsaBLEServiceProvider *_ble) {
-  ble = _ble;
-  ble->bleSetup(serviceUUID, this);
-  ble->addCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
+  bleApi.init(_ble);
+  bleApi.bleSetup(serviceUUID, this);
+  bleApi.addCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
 }
 
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
