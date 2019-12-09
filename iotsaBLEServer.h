@@ -14,6 +14,8 @@
 typedef const char * UUIDstring;
 
 class IotsaBLEServerMod;
+class IotsaBLEApiProvider;
+
 
 class IotsaBLEApiProvider {
 public:
@@ -23,56 +25,34 @@ public:
   virtual bool blePutHandler(UUIDstring charUUID) = 0;
   virtual bool bleGetHandler(UUIDstring charUUID) = 0;
 
-};
-
-
-class IotsaBLEServiceProvider {
-public:
-  typedef IotsaBLEApiProvider::UUIDstring UUIDstring;
-  
-  virtual ~IotsaBLEServiceProvider() {}
-  virtual void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) = 0;
-  virtual void addCharacteristic(UUIDstring charUUID, int mask) = 0;
-  virtual void characteristicSetFromBuffer(UUIDstring charUUID, const uint8_t *data, size_t size) = 0;
-  virtual void characteristicSet(UUIDstring charUUID, uint8_t value) = 0;
-  virtual void characteristicSet(UUIDstring charUUID, uint16_t value) = 0;
-  virtual void characteristicSet(UUIDstring charUUID, uint32_t value) = 0;
-  virtual void characteristicSet(UUIDstring charUUID, const std::string& value) = 0;
-  virtual void characteristicSet(UUIDstring charUUID, const String& value) = 0;
-  virtual void characteristicAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep) = 0;
-  virtual int characteristicAsInt(UUIDstring charUUID) = 0;
-  virtual std::string characteristicAsString(UUIDstring charUUID) = 0;
-
-  static const uint32_t READ = BLECharacteristic::PROPERTY_READ;
-  static const uint32_t WRITE = BLECharacteristic::PROPERTY_WRITE;
-  static const uint32_t NOTIFY = BLECharacteristic::PROPERTY_NOTIFY;
+  static const uint32_t BLE_READ = BLECharacteristic::PROPERTY_READ;
+  static const uint32_t BLE_WRITE = BLECharacteristic::PROPERTY_WRITE;
+  static const uint32_t BLE_NOTIFY = BLECharacteristic::PROPERTY_NOTIFY;
 };
 
 class IotsaBleApiService {
+  typedef IotsaBLEApiProvider::UUIDstring UUIDstring;
 public:
   IotsaBleApiService(IotsaBLEServerMod *_mod=NULL)
   : apiProvider(NULL),
-    mod(_mod),
     bleService(NULL),
     nCharacteristic(0),
     characteristicUUIDs(NULL),
     bleCharacteristics(NULL)
   {}
-  void init(IotsaBLEServerMod *_mod) { mod=_mod; }
-  void bleSetup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider);
+  void setup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider);
   void addCharacteristic(UUIDstring charUUID, int mask);
-  void characteristicSetFromBuffer(UUIDstring charUUID, const uint8_t *data, size_t size);
-  void characteristicSet(UUIDstring charUUID, uint8_t value);
-  void characteristicSet(UUIDstring charUUID, uint16_t value);
-  void characteristicSet(UUIDstring charUUID, uint32_t value);
-  void characteristicSet(UUIDstring charUUID, const std::string& value);
-  void characteristicSet(UUIDstring charUUID, const String& value);
-  void characteristicAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep);
-  int characteristicAsInt(UUIDstring charUUID);
-  std::string characteristicAsString(UUIDstring charUUID);
+  void set(UUIDstring charUUID, const uint8_t *data, size_t size);
+  void set(UUIDstring charUUID, uint8_t value);
+  void set(UUIDstring charUUID, uint16_t value);
+  void set(UUIDstring charUUID, uint32_t value);
+  void set(UUIDstring charUUID, const std::string& value);
+  void set(UUIDstring charUUID, const String& value);
+  void getAsBuffer(UUIDstring charUUID, uint8_t **datap, size_t *sizep);
+  int getAsInt(UUIDstring charUUID);
+  std::string getAsString(UUIDstring charUUID);
 protected:
   IotsaBLEApiProvider *apiProvider;
-  IotsaBLEServerMod *mod;
   BLEService *bleService;
   int nCharacteristic;
   UUIDstring  *characteristicUUIDs;

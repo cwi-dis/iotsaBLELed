@@ -39,21 +39,19 @@ public:
   String info();
   bool blePutHandler(UUIDstring charUUID);
   bool bleGetHandler(UUIDstring charUUID);
-  void setBLE(IotsaBLEServerMod *_ble);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
   bool putHandler(const char *path, const JsonVariant& request, JsonObject& reply);
   IotsaBleApiService bleApi;
-private:
   void handler();
 };
 
-static IotsaBLEServiceProvider::UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
-static IotsaBLEServiceProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
+static IotsaBLEApiProvider::UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
+static IotsaBLEApiProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
 
 bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
-      uint32_t _rgb = bleApi.characteristicAsInt(rgbUUID);
+      uint32_t _rgb = bleApi.getAsInt(rgbUUID);
       set(_rgb, 1000, 0, 0x7fff);
       IFDEBUG IotsaSerial.printf("xxxjack led: wrote %s value 0x%x\n", charUUID, rgb);
       return true;
@@ -65,7 +63,7 @@ bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
 bool IotsaLedControlMod::bleGetHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
       IFDEBUG IotsaSerial.printf("xxxjack led: read %s value 0x%x\n", charUUID, rgb);
-      bleApi.characteristicSet(rgbUUID, rgb);
+      bleApi.set(rgbUUID, rgb);
       return true;
   }
   IotsaSerial.println("ledControlMod: ble: read unknown uuid");
@@ -120,12 +118,8 @@ void IotsaLedControlMod::serverSetup() {
 #endif // IOTSA_WITH_WEB
   api.setup("/api/led", true, true);
   name = "led";
-}
-
-void IotsaLedControlMod::setBLE(IotsaBLEServerMod *_ble) {
-  bleApi.init(_ble);
-  bleApi.bleSetup(serviceUUID, this);
-  bleApi.addCharacteristic(rgbUUID, IotsaBLEServiceProvider::READ|IotsaBLEServiceProvider::WRITE);
+  bleApi.setup(serviceUUID, this);
+  bleApi.addCharacteristic(rgbUUID, BLE_READ|BLE_WRITE);
 }
 
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
@@ -134,7 +128,6 @@ IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);
 void setup(void){
   application.setup();
   application.serverSetup();
-  ledMod.setBLE(&bleserverMod);
 }
  
 // Standard loop() routine, hands off most work to the application framework
