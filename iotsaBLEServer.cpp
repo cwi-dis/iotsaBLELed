@@ -2,6 +2,7 @@
 #include "iotsaBLEServer.h"
 #include "iotsaConfigFile.h"
 
+#ifdef IOTSA_WITH_BLE
 class IotsaBLEServerCallbacks : public BLEServerCallbacks {
 	void onConnect(BLEServer* pServer) {
     IFDEBUG IotsaSerial.println("BLE connect\n");
@@ -198,3 +199,4 @@ void IotsaBLEServerMod::configSave() {
 
 void IotsaBLEServerMod::loop() {
 }
+#endif // IOTSA_WITH_BLE

@@ -24,8 +24,9 @@ IotsaOtaMod otaMod(application);
 #endif
 
 #include "iotsaBLEServer.h"
+#ifdef IOTSA_WITH_BLE
 IotsaBLEServerMod bleserverMod(application);
-
+#endif
 //
 // LED module. 
 //
@@ -37,18 +38,22 @@ public:
   using IotsaLedMod::IotsaLedMod;
   void serverSetup();
   String info();
-  bool blePutHandler(UUIDstring charUUID);
-  bool bleGetHandler(UUIDstring charUUID);
 protected:
   bool getHandler(const char *path, JsonObject& reply);
   bool putHandler(const char *path, const JsonVariant& request, JsonObject& reply);
-  IotsaBleApiService bleApi;
   void handler();
+
+#ifdef IOTSA_WITH_BLE
+  IotsaBleApiService bleApi;
+  bool blePutHandler(UUIDstring charUUID);
+  bool bleGetHandler(UUIDstring charUUID);
+  static constexpr UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
+  static constexpr UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
+#endif // IOTSA_WITH_BLE
+
 };
 
-static IotsaBLEApiProvider::UUIDstring serviceUUID = "3B006387-1226-4A53-9D24-AFA50C0163A3";
-static IotsaBLEApiProvider::UUIDstring rgbUUID = "72BC73F7-9AF2-452D-BBFB-CE4AF53F499A";
-
+#ifdef IOTSA_WITH_BLE
 bool IotsaLedControlMod::blePutHandler(UUIDstring charUUID) {
   if (charUUID == rgbUUID) {
       uint32_t _rgb = bleApi.getAsInt(rgbUUID);
@@ -69,6 +74,7 @@ bool IotsaLedControlMod::bleGetHandler(UUIDstring charUUID) {
   IotsaSerial.println("ledControlMod: ble: read unknown uuid");
   return false;
 }
+#endif // IOTSA_WITH_BLE
 
 #ifdef IOTSA_WITH_WEB
 void
@@ -93,8 +99,12 @@ IotsaLedControlMod::handler() {
 String IotsaLedControlMod::info() {
   // Return some information about this module, for the main page of the web server.
   String rv = "<p>See <a href=\"/led\">/led</a> for setting the LED color.";
+#ifdef IOTSA_WITH_REST
   rv += " Or use REST api at <a href='/api/led'>/api/led</a>.";
+#endif
+#ifdef IOTSA_WITH_BLE
   rv += " Or use BLE service " + String(serviceUUID) + ".";
+#endif
   rv += "</p>";
   return rv;
 }
@@ -118,8 +128,10 @@ void IotsaLedControlMod::serverSetup() {
 #endif // IOTSA_WITH_WEB
   api.setup("/api/led", true, true);
   name = "led";
+#ifdef IOTSA_WITH_BLE
   bleApi.setup(serviceUUID, this);
   bleApi.addCharacteristic(rgbUUID, BLE_READ|BLE_WRITE);
+#endif
 }
 
 IotsaLedControlMod ledMod(application, NEOPIXEL_PIN);

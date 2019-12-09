@@ -2,6 +2,8 @@
 #define _IOTSABLESERVER_H_
 #include "iotsa.h"
 #include "iotsaApi.h"
+#define IOTSA_WITH_BLE
+#ifdef IOTSA_WITH_BLE
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -78,5 +80,7 @@ protected:
   static void createServer();
   static BLEServer *s_server;
 };
-
+#else // IOTSA_WITH_BLE
+class IotsaBLEApiProvider {};
+#endif
 #endif
