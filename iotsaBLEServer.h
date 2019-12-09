@@ -79,6 +79,9 @@ protected:
 
   static void createServer();
   static BLEServer *s_server;
+
+  uint16_t adv_min = 0;
+  uint16_t adv_max = 0;
 };
 #else // IOTSA_WITH_BLE
 class IotsaBLEApiProvider {};

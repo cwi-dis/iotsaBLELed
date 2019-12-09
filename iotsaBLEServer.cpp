@@ -3,6 +3,10 @@
 #include "iotsaConfigFile.h"
 
 #ifdef IOTSA_WITH_BLE
+
+#undef IOTSA_BLE_DEBUG
+
+#ifdef IOTSA_BLE_DEBUG
 class IotsaBLEServerCallbacks : public BLEServerCallbacks {
 	void onConnect(BLEServer* pServer) {
     IFDEBUG IotsaSerial.println("BLE connect\n");
@@ -11,8 +15,9 @@ class IotsaBLEServerCallbacks : public BLEServerCallbacks {
     IFDEBUG IotsaSerial.println("BLE Disconnect\n");
 
   }
-
 };
+#endif // IOTSA_BLE_DEBUG
+
 class IotsaBLECharacteristicCallbacks : public BLECharacteristicCallbacks {
 public:
   IotsaBLECharacteristicCallbacks(UUIDstring _charUUID, IotsaBLEApiProvider *_api)
@@ -21,18 +26,26 @@ public:
   {}
 
 	void onRead(BLECharacteristic* pCharacteristic) {
-    IFDEBUG IotsaSerial.printf("BLE char onRead 0x%x\n", (uint32_t)pCharacteristic);
+#ifdef IOTSA_BLE_DEBUG
+    IotsaSerial.printf("BLE char onRead 0x%x\n", (uint32_t)pCharacteristic);
+#endif
     api->bleGetHandler(charUUID);
   }
 	void onWrite(BLECharacteristic* pCharacteristic) {
-    IFDEBUG IotsaSerial.printf("BLE char onWrite\n");
+#ifdef IOTSA_BLE_DEBUG
+    IotsaSerial.printf("BLE char onWrite\n");
+#endif
     api->blePutHandler(charUUID);
   }
 	void onNotify(BLECharacteristic* pCharacteristic) {
-    IFDEBUG IotsaSerial.printf("BLE char onNotify\n");
+#ifdef IOTSA_BLE_DEBUG
+    IotsaSerial.printf("BLE char onNotify\n");
+#endif
   }
 	void onStatus(BLECharacteristic* pCharacteristic, Status s, uint32_t code) {
-    IFDEBUG IotsaSerial.printf("BLE char onStatus\n");
+#ifdef IOTSA_BLE_DEBUG
+    IotsaSerial.printf("BLE char onStatus\n");
+#endif
   }
 private:
   UUIDstring charUUID;
@@ -43,10 +56,22 @@ private:
 void
 IotsaBLEServerMod::handler() {
   bool anyChanged = false;
+  if( server->hasArg("adv_min")) {
+    adv_min = strtol(server->arg("adv_min").c_str(), 0, 10);
+    anyChanged = true;
+  }
+  if( server->hasArg("adv_max")) {
+    adv_max = strtol(server->arg("adv_max").c_str(), 0, 10);
+    anyChanged = true;
+  }
   if (anyChanged) configSave();
+
   
   String message = "<html><head><title>BLE Server module</title></head><body><h1>BLE Server module</h1>";
-  message += "<p>Nothing to be seen here, yet.</p>";
+  message += "<form method='get'>";
+  message += "Advertising interval (min): <input type='text' name='adv_min' value='" + String(adv_min) + "'> (default: 32, unit: 0.625ms, range: 32..16384)<br>";
+  message += "Advertising interval (max): <input type='text' name='adv_max' value='" + String(adv_max) + "'> (default: 32, unit: 0.625ms, range: 32..16384)<br>";
+  message += "<input type='submit'></form></body></html>";
   server->send(200, "text/html", message);
 }
 
@@ -62,26 +87,31 @@ void IotsaBLEServerMod::createServer() {
   if (s_server) return;
   BLEDevice::init(iotsaConfig.hostName.c_str());
   s_server = BLEDevice::createServer();
+#ifdef IOTSA_BLE_DEBUG
   s_server->setCallbacks(new IotsaBLEServerCallbacks());
+#endif
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->setScanResponse(true);
   pAdvertising->start();
 }
 
 void IotsaBLEServerMod::setup() {
-  configLoad();
   createServer();
+  configLoad();
 }
 
 #ifdef IOTSA_WITH_API
 bool IotsaBLEServerMod::getHandler(const char *path, JsonObject& reply) {
+  reply["adv_min"] = adv_min;
+  reply["adv_max"] = adv_max;
   return true;
 }
 
 bool IotsaBLEServerMod::putHandler(const char *path, const JsonVariant& request, JsonObject& reply) {
-  bool anyChanged = false;
-  if (anyChanged) configSave();
-  return anyChanged;
+  adv_min = request["adv_min"]|0;
+  adv_max = request["adv_max"]|0;
+  configSave();
+  return true;
 }
 #endif // IOTSA_WITH_API
 
@@ -93,6 +123,34 @@ void IotsaBLEServerMod::serverSetup() {
   api.setup("/api/bleserver", true, true);
   name = "bleserver";
 #endif
+}
+
+void IotsaBLEServerMod::configLoad() {
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->stop();
+  IotsaConfigFileLoad cf("/config/bleserver.cfg");
+  int value;
+  cf.get("adv_min", value, 0);
+  adv_min = value;
+  if (adv_min) pAdvertising->setMinInterval(adv_min);
+  cf.get("adv_max", value, 0);
+  adv_max = value;
+  if (adv_max) pAdvertising->setMaxInterval(adv_max);
+  pAdvertising->start();
+}
+
+void IotsaBLEServerMod::configSave() {
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->stop();
+  IotsaConfigFileSave cf("/config/bleserver.cfg");
+  cf.put("adv_min", adv_min);
+  cf.put("adv_max", adv_max);
+  if (adv_min) pAdvertising->setMinInterval(adv_min);
+  if (adv_max) pAdvertising->setMaxInterval(adv_max);
+  pAdvertising->start();
+}
+
+void IotsaBLEServerMod::loop() {
 }
 
 void IotsaBleApiService::setup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) {
@@ -189,14 +247,5 @@ std::string IotsaBleApiService::getAsString(UUIDstring charUUID) {
   return std::string((const char *)ptr, size);
 }
 
-void IotsaBLEServerMod::configLoad() {
-  IotsaConfigFileLoad cf("/config/bleserver.cfg"); 
-}
 
-void IotsaBLEServerMod::configSave() {
-  IotsaConfigFileSave cf("/config/bleserver.cfg");
-}
-
-void IotsaBLEServerMod::loop() {
-}
 #endif // IOTSA_WITH_BLE

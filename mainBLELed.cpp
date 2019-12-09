@@ -25,7 +25,7 @@ IotsaOtaMod otaMod(application);
 
 #include "iotsaBLEServer.h"
 #ifdef IOTSA_WITH_BLE
-IotsaBLEServerMod bleserverMod(application);
+// IotsaBLEServerMod bleserverMod(application);
 #endif
 //
 // LED module. 
