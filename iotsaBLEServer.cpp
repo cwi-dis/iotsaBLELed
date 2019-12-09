@@ -5,14 +5,19 @@
 #ifdef IOTSA_WITH_BLE
 
 #undef IOTSA_BLE_DEBUG
+#ifdef IOTSA_BLE_DEBUG
+#define IFBLEDEBUG if(1)
+#else
+#define IFBLEDEBUG if(0)
+#endif
 
 #ifdef IOTSA_BLE_DEBUG
 class IotsaBLEServerCallbacks : public BLEServerCallbacks {
 	void onConnect(BLEServer* pServer) {
-    IFDEBUG IotsaSerial.println("BLE connect\n");
+    IotsaSerial.println("BLE connect\n");
   }
 	void onDisconnect(BLEServer* pServer) {
-    IFDEBUG IotsaSerial.println("BLE Disconnect\n");
+    IotsaSerial.println("BLE Disconnect\n");
 
   }
 };
@@ -26,26 +31,18 @@ public:
   {}
 
 	void onRead(BLECharacteristic* pCharacteristic) {
-#ifdef IOTSA_BLE_DEBUG
-    IotsaSerial.printf("BLE char onRead 0x%x\n", (uint32_t)pCharacteristic);
-#endif
+    IFBLEDEBUG IotsaSerial.printf("BLE char onRead 0x%x\n", (uint32_t)pCharacteristic);
     api->bleGetHandler(charUUID);
   }
 	void onWrite(BLECharacteristic* pCharacteristic) {
-#ifdef IOTSA_BLE_DEBUG
-    IotsaSerial.printf("BLE char onWrite\n");
-#endif
+    IFBLEDEBUG IotsaSerial.printf("BLE char onWrite\n");
     api->blePutHandler(charUUID);
   }
 	void onNotify(BLECharacteristic* pCharacteristic) {
-#ifdef IOTSA_BLE_DEBUG
-    IotsaSerial.printf("BLE char onNotify\n");
-#endif
+    IFBLEDEBUG IotsaSerial.printf("BLE char onNotify\n");
   }
 	void onStatus(BLECharacteristic* pCharacteristic, Status s, uint32_t code) {
-#ifdef IOTSA_BLE_DEBUG
-    IotsaSerial.printf("BLE char onStatus\n");
-#endif
+    IFBLEDEBUG IotsaSerial.printf("BLE char onStatus\n");
   }
 private:
   UUIDstring charUUID;
@@ -156,7 +153,7 @@ void IotsaBLEServerMod::loop() {
 void IotsaBleApiService::setup(const char* serviceUUID, IotsaBLEApiProvider *_apiProvider) {
   IotsaBLEServerMod::createServer();
   apiProvider = _apiProvider;
-  IFDEBUG IotsaSerial.printf("ble service %s to 0x%x\n", serviceUUID, (uint32_t)apiProvider);
+  IFBLEDEBUG IotsaSerial.printf("ble service %s to 0x%x\n", serviceUUID, (uint32_t)apiProvider);
   bleService = IotsaBLEServerMod::s_server->createService(serviceUUID);
   bleService->start();
 
@@ -167,7 +164,7 @@ void IotsaBleApiService::setup(const char* serviceUUID, IotsaBLEApiProvider *_ap
 }
 
 void IotsaBleApiService::addCharacteristic(UUIDstring charUUID, int mask) {
-  IFDEBUG IotsaSerial.printf("ble characteristic %s mask %d\n", charUUID, mask);
+  IFBLEDEBUG IotsaSerial.printf("ble characteristic %s mask %d\n", charUUID, mask);
   nCharacteristic++;
   characteristicUUIDs = (UUIDstring *)realloc((void *)characteristicUUIDs, nCharacteristic*sizeof(UUIDstring));
   bleCharacteristics = (BLECharacteristic **)realloc((void *)bleCharacteristics, nCharacteristic*sizeof(BLECharacteristic *));
